@@ -7,7 +7,22 @@ const settingsSchema = new mongoose.Schema({
   twilioAccountSid: { type: String },
   twilioAuthToken: { type: String },
   twilioPhoneNumber: { type: String },
-}, { timestamps: true });
+  primaryColor: { 
+    type: String, 
+    default: '#1DB954' 
+  },
+  platformEnabled: { 
+    type: Boolean, 
+    default: true 
+  },
+  disabledMessage: { 
+    type: String,
+    default: 'Platform is currently under maintenance. Please try again later.'
+  }
+}, { 
+  timestamps: true,
+  strict: false // Allows for dynamic settings
+});
 
 // Ensure only one settings document exists
 settingsSchema.pre('save', async function(next) {

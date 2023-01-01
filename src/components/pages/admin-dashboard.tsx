@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Music2, Search, Clock, CheckCircle2, 
   AlertCircle, Loader2, RefreshCcw, Users,
@@ -33,6 +33,7 @@ export function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // Fetch requests with pagination
   const { data: requests, isLoading, refetch } = useQuery({
@@ -54,6 +55,34 @@ export function AdminDashboard() {
     }
   });
 
+  // Update request status mutation
+  const updateStatus = useMutation({
+    mutationFn: async ({ requestId, status }: { requestId: string; status: string }) => {
+      const response = await fetch(`/api/admin/requests/${requestId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (!response.ok) throw new Error('Failed to update status');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['admin-requests']);
+      queryClient.invalidateQueries(['admin-metrics']);
+      toast({
+        title: "Status atualizado ✨",
+        description: "A solicitação foi atualizada com sucesso!"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar o status.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const filteredRequests = requests?.items?.filter(request => {
     const matchesSearch = request.title?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || request.status === statusFilter;
@@ -61,29 +90,8 @@ export function AdminDashboard() {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const handleStatusChange = async (requestId: string, newStatus: string) => {
-    try {
-      const response = await fetch(`/api/admin/requests/${requestId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-
-      if (!response.ok) throw new Error('Failed to update status');
-      
-      toast({
-        title: "Status atualizado ✨",
-        description: "A solicitação foi atualizada com sucesso!"
-      });
-      
-      refetch();
-    } catch (error) {
-      toast({
-        title: "Erro ao atualizar",
-        description: "Não foi possível atualizar o status.",
-        variant: "destructive"
-      });
-    }
+  const handleStatusChange = (requestId: string, newStatus: string) => {
+    updateStatus.mutate({ requestId, status: newStatus });
   };
 
   const MetricCard = ({ title, value, icon: Icon, color }: any) => (

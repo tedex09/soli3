@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import dbConnect from "@/lib/db";
-import Settings from "@/models/Settings";
-import { cacheDelete } from "@/lib/redis";
+import AccessLog from "@/models/AccessLog";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.role === "admin") {
@@ -12,8 +11,11 @@ export async function GET() {
     }
 
     await dbConnect();
-    const settings = await Settings.findOne();
-    return NextResponse.json(settings);
+    const logs = await AccessLog.find()
+      .sort({ timestamp: -1 })
+      .populate('userId', 'name email');
+
+    return NextResponse.json(logs);
   } catch (error) {
     return NextResponse.json(
       { error: "Internal Server Error" },
@@ -22,26 +24,17 @@ export async function GET() {
   }
 }
 
-export async function PUT(req: NextRequest) {
+export async function DELETE(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.role === "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
     await dbConnect();
-    
-    const settings = await Settings.findOneAndUpdate(
-      {},
-      { ...body },
-      { new: true, upsert: true }
-    );
+    await AccessLog.deleteMany({});
 
-    // Clear settings cache
-    await cacheDelete('platform:settings');
-
-    return NextResponse.json(settings);
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
     return NextResponse.json(
       { error: "Internal Server Error" },

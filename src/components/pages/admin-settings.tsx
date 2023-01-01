@@ -21,8 +21,9 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Music2, ArrowLeft } from "lucide-react";
+import { Music2, ArrowLeft, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSettingsStore } from "@/stores/settings";
 
 const settingsSchema = z.object({
   requestLimitPerDay: z.number().min(1),
@@ -31,10 +32,16 @@ const settingsSchema = z.object({
   twilioAccountSid: z.string().optional(),
   twilioAuthToken: z.string().optional(),
   twilioPhoneNumber: z.string().optional(),
+  primaryColor: z.string(),
+  platformEnabled: z.boolean(),
+  disabledMessage: z.string().optional(),
 });
 
 export function AdminSettings() {
   const router = useRouter();
+  const { setSettings } = useSettingsStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const form = useForm<z.infer<typeof settingsSchema>>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
@@ -44,6 +51,9 @@ export function AdminSettings() {
       twilioAccountSid: "",
       twilioAuthToken: "",
       twilioPhoneNumber: "",
+      primaryColor: "#1DB954",
+      platformEnabled: true,
+      disabledMessage: "",
     },
   });
 
@@ -56,11 +66,13 @@ export function AdminSettings() {
     },
     onSuccess: (data) => {
       form.reset(data);
+      setSettings(data);
     },
   });
 
   const updateSettings = useMutation({
     mutationFn: async (data: z.infer<typeof settingsSchema>) => {
+      setIsSubmitting(true);
       const response = await fetch("/api/admin/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -69,7 +81,8 @@ export function AdminSettings() {
       if (!response.ok) throw new Error("Failed to update settings");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setSettings(data);
       toast.success("Configurações salvas", {
         description: "As alterações foram aplicadas com sucesso",
       });
@@ -79,17 +92,13 @@ export function AdminSettings() {
         description: "Ocorreu um erro ao salvar as configurações",
       });
     },
+    onSettled: () => {
+      setIsSubmitting(false);
+    },
   });
 
   const onSubmit = (data: z.infer<typeof settingsSchema>) => {
-    // Only include Twilio settings if WhatsApp is enabled
-    const settingsToUpdate = {
-      ...data,
-      twilioAccountSid: data.whatsappEnabled ? data.twilioAccountSid : undefined,
-      twilioAuthToken: data.whatsappEnabled ? data.twilioAuthToken : undefined,
-      twilioPhoneNumber: data.whatsappEnabled ? data.twilioPhoneNumber : undefined,
-    };
-    updateSettings.mutate(settingsToUpdate);
+    updateSettings.mutate(data);
   };
 
   if (isLoading) {
@@ -280,14 +289,94 @@ export function AdminSettings() {
                 </Card>
               </motion.div>
 
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <h2 className="text-2xl font-semibold">
+                      Aparência e Status
+                    </h2>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="primaryColor"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cor primária</FormLabel>
+                          <FormControl>
+                            <div className="flex gap-4">
+                              <Input type="color" {...field} className="w-20 h-10" />
+                              <Input {...field} placeholder="#1DB954" />
+                            </div>
+                          </FormControl>
+                          <FormDescription>
+                            Cor principal da plataforma
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="platformEnabled"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <FormLabel>Plataforma ativa</FormLabel>
+                            <FormDescription>
+                              Habilitar/desabilitar acesso à plataforma
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    {!form.watch("platformEnabled") && (
+                      <FormField
+                        control={form.control}
+                        name="disabledMessage"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Mensagem de manutenção</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="A plataforma está em manutenção..." />
+                            </FormControl>
+                            <FormDescription>
+                              Mensagem exibida quando a plataforma estiver desativada
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+
               <Button
                 type="submit"
                 className="w-full bg-[#1DB954] hover:bg-[#1ed760]"
-                disabled={updateSettings.isLoading}
+                disabled={isSubmitting}
               >
-                {updateSettings.isLoading
-                  ? "Salvando..."
-                  : "Salvar Configurações"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar Configurações"
+                )}
               </Button>
             </form>
           </Form>

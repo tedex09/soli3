@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { PlatformGuard } from "@/components/platform-guard";
+import { MobileLayout } from "@/components/mobile-layout";
 import "./globals.css";
+import { isMobileDevice } from "@/utils/client";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,10 +21,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const isMobile = isMobileDevice();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <Providers>{children}</Providers>
+        <Providers>
+          <PlatformGuard>
+            {isMobile ? (
+                <MobileLayout>{children}</MobileLayout>
+            ) : (
+                children
+            )}
+          </PlatformGuard>
+        </Providers>
       </body>
     </html>
   );

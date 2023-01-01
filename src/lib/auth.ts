@@ -4,7 +4,10 @@ import bcrypt from "bcrypt";
 import clientPromise from "./mongodb";
 import dbConnect from "./db";
 import User from "@/models/User";
+import Session from "@/models/Session";
+import AccessLog from "@/models/AccessLog";
 import { getServerSession } from "next-auth";
+import { getClientInfo } from "@/utils/client";
 
 export const authConfig = {
   adapter: MongoDBAdapter(clientPromise),
@@ -16,7 +19,7 @@ export const authConfig = {
         password: { label: "Password", type: "password" }
       },
       
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email e senha são obrigatórios");
         }
@@ -32,16 +35,36 @@ export const authConfig = {
         if (!isValid) {
           throw new Error("Senha incorreta");
         }
-        
+
+        // Terminate other active sessions
+        await Session.updateMany(
+          { userId: user._id, isActive: true },
+          { isActive: false }
+        );
+
+        // Create new session
+        const deviceInfo = getClientInfo(req);
+        const session = await Session.create({
+          userId: user._id,
+          token: Math.random().toString(36).substring(7),
+          deviceInfo
+        });
+
+        // Log access
+        await AccessLog.create({
+          userId: user._id,
+          action: 'login',
+          deviceInfo
+        });
 
         return {
           id: user._id.toString(),
           email: user.email,
           name: user.name,
           role: user.role,
+          sessionToken: session.token
         };
       }
-      
     })
   ],
   callbacks: {
@@ -49,6 +72,7 @@ export const authConfig = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        token.sessionToken = user.sessionToken;
       }
       return token;
     },
@@ -56,7 +80,25 @@ export const authConfig = {
       if (token) {
         session.user.role = token.role;
         session.user.id = token.id;
+        session.user.sessionToken = token.sessionToken;
       }
+
+      // Verify if session is still active
+      const activeSession = await Session.findOne({
+        userId: token.id,
+        token: token.sessionToken,
+        isActive: true
+      });
+
+      if (!activeSession) {
+        throw new Error("Session expired");
+      }
+
+      // Update last activity
+      await Session.findByIdAndUpdate(activeSession._id, {
+        lastActivity: new Date()
+      });
+
       return session;
     }
   },
@@ -66,7 +108,7 @@ export const authConfig = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 dias
+    maxAge: 24 * 60 * 60, // 24 hours
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
