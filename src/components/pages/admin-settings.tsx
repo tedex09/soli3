@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Music2, ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,20 +28,19 @@ const settingsSchema = z.object({
   requestLimitPerDay: z.number().min(1),
   requestLimitPerWeek: z.number().min(1),
   whatsappEnabled: z.boolean(),
-  twilioAccountSid: z.string().min(1, "Account SID é obrigatório"),
-  twilioAuthToken: z.string().min(1, "Auth Token é obrigatório"),
-  twilioPhoneNumber: z.string().min(1, "Número é obrigatório"),
+  twilioAccountSid: z.string().optional(),
+  twilioAuthToken: z.string().optional(),
+  twilioPhoneNumber: z.string().optional(),
 });
 
 export function AdminSettings() {
   const router = useRouter();
-  const { toast } = useToast();
   const form = useForm<z.infer<typeof settingsSchema>>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       requestLimitPerDay: 10,
       requestLimitPerWeek: 50,
-      whatsappEnabled: true,
+      whatsappEnabled: false,
       twilioAccountSid: "",
       twilioAuthToken: "",
       twilioPhoneNumber: "",
@@ -71,15 +70,26 @@ export function AdminSettings() {
       return response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Configurações salvas",
+      toast.success("Configurações salvas", {
         description: "As alterações foram aplicadas com sucesso",
+      });
+    },
+    onError: () => {
+      toast.error("Erro ao salvar", {
+        description: "Ocorreu um erro ao salvar as configurações",
       });
     },
   });
 
   const onSubmit = (data: z.infer<typeof settingsSchema>) => {
-    updateSettings.mutate(data);
+    // Only include Twilio settings if WhatsApp is enabled
+    const settingsToUpdate = {
+      ...data,
+      twilioAccountSid: data.whatsappEnabled ? data.twilioAccountSid : undefined,
+      twilioAuthToken: data.whatsappEnabled ? data.twilioAuthToken : undefined,
+      twilioPhoneNumber: data.whatsappEnabled ? data.twilioPhoneNumber : undefined,
+    };
+    updateSettings.mutate(settingsToUpdate);
   };
 
   if (isLoading) {
@@ -219,7 +229,7 @@ export function AdminSettings() {
                     />
 
                     {form.watch("whatsappEnabled") && (
-                      <>
+                      <div className="space-y-4 animate-in fade-in-50">
                         <FormField
                           control={form.control}
                           name="twilioAccountSid"
@@ -264,7 +274,7 @@ export function AdminSettings() {
                             </FormItem>
                           )}
                         />
-                      </>
+                      </div>
                     )}
                   </CardContent>
                 </Card>

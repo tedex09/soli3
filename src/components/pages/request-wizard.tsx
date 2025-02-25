@@ -1,45 +1,4 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
-import MediaSearch from "@/components/MediaSearch";
-import { ArrowLeft, Send, Film, Tv, Plus, Wrench, RefreshCw } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-
-export function RequestWizard() {
-  const [step, setStep] = useState(1);
-  const [mediaType, setMediaType] = useState<"movie" | "tv">();
-  const [requestType, setRequestType] = useState<string>("");
-  const [selectedMedia, setSelectedMedia] = useState<any>(null);
-  const [description, setDescription] = useState("");
-  const [whatsappNotifications, setWhatsappNotifications] = useState(false);
-  const [whatsappNumber, setWhatsappNumber] = useState("");
-  const { toast } = useToast();
-  const router = useRouter();
-
-  const handleMediaTypeSelect = (type: "movie" | "tv") => {
-    setMediaType(type);
-    setStep(2);
-  };
-
-  const handleRequestTypeSelect = (type: string) => {
-    setRequestType(type);
-    setStep(3);
-  };
-
-  const handleMediaSelect = (media: any) => {
-    setSelectedMedia(media);
-    setStep(4);
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const response = await fetch("/api/requests", {
+api/requests", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -56,22 +15,26 @@ export function RequestWizard() {
         }),
       });
       
-      const data = await response.json();
       if (!response.ok) throw new Error("Falha ao enviar solicitação");
 
-      toast({
-        title: "✨ Solicitação enviada com sucesso!",
-        description: "Você receberá atualizações sobre o status.",
+      toast.success("✨ Solicitação enviada!", {
+        description: "Você será redirecionado para o dashboard.",
       });
       
-      router.push(`/request/${data.id}`);
+      router.push("/dashboard");
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "❌ Erro ao enviar solicitação",
+      toast.error("Erro ao enviar solicitação", {
         description: "Por favor, tente novamente mais tarde.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const slideAnimation = {
+    initial: { opacity: 0, x: 20 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -20 }
   };
 
   return (
@@ -96,11 +59,16 @@ export function RequestWizard() {
             />
           ))}
         </div>
-        <p className="text-muted-foreground">Passo {step} de 4</p> </div>
+        <p className="text-muted-foreground">Passo {step} de 4</p>
+      </div>
 
-      <div className="space-y-6 animate-fade-in">
+      <AnimatePresence mode="wait">
         {step === 1 && (
-          <div className="space-y-4">
+          <motion.div
+            key="step1"
+            {...slideAnimation}
+            className="space-y-4"
+          >
             <h2 className="text-xl font-semibold">
               Qual tipo de conteúdo você deseja solicitar? 🎬
             </h2>
@@ -108,7 +76,7 @@ export function RequestWizard() {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-32 flex flex-col gap-2"
+                className="h-32 flex flex-col gap-2 hover:bg-accent/10 transition-colors"
                 onClick={() => handleMediaTypeSelect("movie")}
               >
                 <Film className="h-8 w-8" />
@@ -117,18 +85,22 @@ export function RequestWizard() {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-32 flex flex-col gap-2"
+                className="h-32 flex flex-col gap-2 hover:bg-accent/10 transition-colors"
                 onClick={() => handleMediaTypeSelect("tv")}
               >
                 <Tv className="h-8 w-8" />
                 <span>Série</span>
               </Button>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {step === 2 && (
-          <div className="space-y-4">
+          <motion.div
+            key="step2"
+            {...slideAnimation}
+            className="space-y-4"
+          >
             <h2 className="text-xl font-semibold">
               O que você deseja fazer? 🤔
             </h2>
@@ -136,7 +108,7 @@ export function RequestWizard() {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-24 flex gap-4 items-center justify-start px-6"
+                className="h-24 flex gap-4 items-center justify-start px-6 hover:bg-accent/10 transition-colors"
                 onClick={() => handleRequestTypeSelect("add")}
               >
                 <Plus className="h-6 w-6" />
@@ -150,7 +122,7 @@ export function RequestWizard() {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-24 flex gap-4 items-center justify-start px-6"
+                className="h-24 flex gap-4 items-center justify-start px-6 hover:bg-accent/10 transition-colors"
                 onClick={() => handleRequestTypeSelect("fix")}
               >
                 <Wrench className="h-6 w-6" />
@@ -165,7 +137,7 @@ export function RequestWizard() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="h-24 flex gap-4 items-center justify-start px-6"
+                  className="h-24 flex gap-4 items-center justify-start px-6 hover:bg-accent/10 transition-colors"
                   onClick={() => handleRequestTypeSelect("update")}
                 >
                   <RefreshCw className="h-6 w-6" />
@@ -178,11 +150,15 @@ export function RequestWizard() {
                 </Button>
               )}
             </div>
-          </div>
+          </motion.div>
         )}
 
         {step === 3 && (
-          <div className="space-y-4">
+          <motion.div
+            key="step3"
+            {...slideAnimation}
+            className="space-y-4"
+          >
             <h2 className="text-xl font-semibold">
               Buscar conteúdo 🔍
             </h2>
@@ -190,16 +166,22 @@ export function RequestWizard() {
               type={mediaType}
               onSelect={handleMediaSelect}
             />
-          </div>
+          </motion.div>
         )}
 
         {step === 4 && (
-          <div className="space-y-4">
+          <motion.div
+            key="step4"
+            {...slideAnimation}
+            className="space-y-4"
+          >
             <h2 className="text-xl font-semibold">Detalhes da solicitação ✍️</h2>
-            <div className="rounded-lg border p-4 space-y-4">
+            <Card className="p-6 space-y-4">
               <div className="flex items-start space-x-4">
                 {selectedMedia.posterPath ? (
-                  <img
+                  <motion.img
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     src={`https://image.tmdb.org/t/p/w200${selectedMedia.posterPath}`}
                     alt={selectedMedia.title}
                     className="w-24 rounded-md"
@@ -243,7 +225,12 @@ export function RequestWizard() {
                 </div>
 
                 {whatsappNotifications && (
-                  <div className="space-y-2">
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-2"
+                  >
                     <Label htmlFor="whatsapp">Número do WhatsApp</Label>
                     <Input
                       id="whatsapp"
@@ -256,22 +243,28 @@ export function RequestWizard() {
                     <p className="text-sm text-muted-foreground">
                       Digite apenas números, incluindo DDD
                     </p>
-                  </div>
+                  </motion.div>
                 )}
               </div>
-            </div>
+            </Card>
 
             <Button
-              className="w-full gradient-primary"
+              className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-white"
               onClick={handleSubmit}
-              disabled={requestType !== "add" && !description}
+              disabled={isSubmitting || (requestType !== "add" && !description)}
             >
-              Enviar solicitação
-              <Send className="ml-2 h-4 w-4" />
+              {isSubmitting ? (
+                "Enviando..."
+              ) : (
+                <>
+                  Enviar solicitação
+                  <Send className="ml-2 h-4 w-4" />
+                </>
+              )}
             </Button>
-          </div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }
