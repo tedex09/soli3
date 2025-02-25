@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Music2, Search, Clock, CheckCircle2, 
-  AlertCircle, Loader2, RefreshCcw 
+  AlertCircle, Loader2, RefreshCcw, Users,
+  Settings, ChevronRight
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,23 +20,41 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
+
+const ITEMS_PER_PAGE = 10;
 
 export function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
+  const router = useRouter();
 
+  // Fetch requests with pagination
   const { data: requests, isLoading, refetch } = useQuery({
-    queryKey: ['admin-requests'],
+    queryKey: ['admin-requests', currentPage],
     queryFn: async () => {
-      const response = await fetch('/api/admin/requests');
+      const response = await fetch(`/api/admin/requests?page=${currentPage}&limit=${ITEMS_PER_PAGE}`);
       if (!response.ok) throw new Error('Failed to fetch requests');
       return response.json();
     }
   });
 
-  const filteredRequests = requests?.filter(request => {
+  // Fetch metrics
+  const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
+    queryKey: ['admin-metrics'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/metrics');
+      if (!response.ok) throw new Error('Failed to fetch metrics');
+      return response.json();
+    }
+  });
+
+  const filteredRequests = requests?.items?.filter(request => {
     const matchesSearch = request.title?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || request.status === statusFilter;
     const matchesType = typeFilter === "all" || request.type === typeFilter;
@@ -66,6 +86,28 @@ export function AdminDashboard() {
     }
   };
 
+  const MetricCard = ({ title, value, icon: Icon, color }: any) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <Icon className={`h-4 w-4 ${color}`} />
+        </CardHeader>
+        <CardContent>
+          {isLoadingMetrics ? (
+            <Skeleton className="h-7 w-20" />
+          ) : (
+            <div className="text-2xl font-bold">{value}</div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+
   return (
     <div className="min-h-screen bg-[#121212] text-white">
       <div className="flex">
@@ -77,20 +119,60 @@ export function AdminDashboard() {
           </div>
           
           <nav className="space-y-4">
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <CheckCircle2 className="w-4 h-4" /> Aprovadas
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-2"
+              onClick={() => router.push("/admin")}
+            >
+              <CheckCircle2 className="w-4 h-4" /> Dashboard
             </Button>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <AlertCircle className="w-4 h-4" /> Pendentes
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-2"
+              onClick={() => router.push("/admin/users")}
+            >
+              <Users className="w-4 h-4" /> Usuários
             </Button>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <Clock className="w-4 h-4" /> Em análise
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-2"
+              onClick={() => router.push("/admin/settings")}
+            >
+              <Settings className="w-4 h-4" /> Configurações
             </Button>
           </nav>
         </div>
 
         {/* Main Content */}
         <div className="ml-64 flex-1 p-8">
+          {/* Metrics Grid */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+            <MetricCard
+              title="Total de Solicitações"
+              value={metrics?.total || 0}
+              icon={Music2}
+              color="text-blue-500"
+            />
+            <MetricCard
+              title="Pendentes"
+              value={metrics?.pending || 0}
+              icon={Clock}
+              color="text-yellow-500"
+            />
+            <MetricCard
+              title="Concluídas"
+              value={metrics?.completed || 0}
+              icon={CheckCircle2}
+              color="text-green-500"
+            />
+            <MetricCard
+              title="Rejeitadas"
+              value={metrics?.rejected || 0}
+              icon={AlertCircle}
+              color="text-red-500"
+            />
+          </div>
+
           {/* Filters */}
           <div className="mb-8 space-y-4">
             <div className="flex items-center gap-4">
@@ -138,11 +220,24 @@ export function AdminDashboard() {
 
           {/* Requests Table */}
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-8 h-8 animate-spin text-[#1DB954]" />
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-12" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
-            <div className="rounded-lg overflow-hidden border border-[#282828]">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="rounded-lg overflow-hidden border border-[#282828]"
+            >
               <Table>
                 <TableHeader className="bg-[#282828]">
                   <TableRow>
@@ -181,15 +276,44 @@ export function AdminDashboard() {
                         {new Date(request.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => router.push(`/request/${request._id}`)}
+                          className="hover:bg-[#3E3E3E]"
+                        >
                           Ver detalhes
+                          <ChevronRight className="ml-2 h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </div>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between p-4 bg-[#282828]">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="bg-[#3E3E3E] border-none"
+                >
+                  Anterior
+                </Button>
+                <span className="text-sm text-gray-400">
+                  Página {currentPage} de {Math.ceil((requests?.total || 0) / ITEMS_PER_PAGE)}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  disabled={!requests?.hasMore}
+                  className="bg-[#3E3E3E] border-none"
+                >
+                  Próxima
+                </Button>
+              </div>
+            </motion.div>
           )}
         </div>
       </div>
