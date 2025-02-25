@@ -3,13 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Film, Tv, Plus, Wrench, RefreshCw } from "lucide-react";
+import { Film, Tv, Plus, Wrench, RefreshCw, Share2, Copy } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -17,6 +25,9 @@ export function Dashboard() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [selectedRequestId, setSelectedRequestId] = useState("");
+  const { toast } = useToast();
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['requests'],
@@ -54,6 +65,19 @@ export function Dashboard() {
       </div>
     );
   }
+
+  const handleShare = (requestId: string) => {
+    setSelectedRequestId(requestId);
+    setShareDialogOpen(true);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Link copiado!",
+      description: "O link foi copiado para a área de transferência."
+    });
+  };
 
   return (
     <div className="container mx-auto py-8">
@@ -129,7 +153,7 @@ export function Dashboard() {
           >
             <Card
               className="mb-4 hover:bg-accent/5 transition-colors cursor-pointer"
-              onClick={() => router.push(`/request/${request._id}`)}
+              onClick={() => {!shareDialogOpen && router.push(`/request/${request._id}`)}}
             >
               <div className="p-6">
                 <div className="flex items-center gap-4">
@@ -187,6 +211,14 @@ export function Dashboard() {
                           {request.status === "completed" && "Concluído"}
                           {request.status === "rejected" && "Rejeitado"}
                         </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleShare(request._id)}
+                          className="hover:bg-[#3E3E3E]"
+                        >
+                          <Share2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">
@@ -245,6 +277,28 @@ export function Dashboard() {
           </Button>
         </div>
       )}
+
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Compartilhar Solicitação</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center gap-2 mt-4">
+            <Input 
+              readOnly 
+              value={`${window.location.origin}/request/${selectedRequestId}`}
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => copyToClipboard(`${window.location.origin}/request/${selectedRequestId}`)}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

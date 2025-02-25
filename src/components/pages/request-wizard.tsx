@@ -1,4 +1,47 @@
-api/requests", {
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import MediaSearch from "@/components/MediaSearch";
+import { ArrowLeft, Send, Film, Tv, Plus, Wrench, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { AnimatePresence, motion } from "framer-motion";
+import { Card } from "../ui/card";
+
+export function RequestWizard() {
+  const [step, setStep] = useState(1);
+  const [mediaType, setMediaType] = useState<"movie" | "tv">();
+  const [requestType, setRequestType] = useState<string>("");
+  const [selectedMedia, setSelectedMedia] = useState<any>(null);
+  const [description, setDescription] = useState("");
+  const [whatsappNotifications, setWhatsappNotifications] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+
+  const handleMediaTypeSelect = (type: "movie" | "tv") => {
+    setMediaType(type);
+    setStep(2);
+  };
+
+  const handleRequestTypeSelect = (type: string) => {
+    setRequestType(type);
+    setStep(3);
+  };
+
+  const handleMediaSelect = (media: any) => {
+    setSelectedMedia(media);
+    setStep(4);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const response = await fetch("api/requests", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -76,7 +119,7 @@ api/requests", {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-32 flex flex-col gap-2 hover:bg-accent/10 transition-colors"
+                className="h-32 flex flex-col gap-2 hover:bg-accent transition-colors"
                 onClick={() => handleMediaTypeSelect("movie")}
               >
                 <Film className="h-8 w-8" />
@@ -85,7 +128,7 @@ api/requests", {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-32 flex flex-col gap-2 hover:bg-accent/10 transition-colors"
+                className="h-32 flex flex-col gap-2 hover:bg-accent transition-colors"
                 onClick={() => handleMediaTypeSelect("tv")}
               >
                 <Tv className="h-8 w-8" />
@@ -108,7 +151,7 @@ api/requests", {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-24 flex gap-4 items-center justify-start px-6 hover:bg-accent/10 transition-colors"
+                className="h-24 flex gap-4 items-center justify-start px-6 hover:bg-accent transition-colors"
                 onClick={() => handleRequestTypeSelect("add")}
               >
                 <Plus className="h-6 w-6" />
@@ -122,7 +165,7 @@ api/requests", {
               <Button
                 variant="outline"
                 size="lg"
-                className="h-24 flex gap-4 items-center justify-start px-6 hover:bg-accent/10 transition-colors"
+                className="h-24 flex gap-4 items-center justify-start px-6 hover:bg-accent transition-colors"
                 onClick={() => handleRequestTypeSelect("fix")}
               >
                 <Wrench className="h-6 w-6" />
@@ -137,7 +180,7 @@ api/requests", {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="h-24 flex gap-4 items-center justify-start px-6 hover:bg-accent/10 transition-colors"
+                  className="h-24 flex gap-4 items-center justify-start px-6 hover:bg-accent transition-colors"
                   onClick={() => handleRequestTypeSelect("update")}
                 >
                   <RefreshCw className="h-6 w-6" />
