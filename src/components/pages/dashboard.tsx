@@ -124,7 +124,7 @@ export function Dashboard() {
           </Select>
           <Button 
             onClick={() => router.push("/request")}
-            className="bg-[--primary] hover:bg-[#1ed760] text-white"
+            className="bg-[--primary] hover:bg-[--primary]/50 text-white"
           >
             Nova solicitação
           </Button>

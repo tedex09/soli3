@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Music2, ArrowLeft, Loader2, Trash2 } from "lucide-react";
+import { Music2, ArrowLeft, Loader2, Trash2, LogOut } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSettingsStore } from "@/stores/settings";
 import {
@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { signOut } from "next-auth/react";
 
 
 const settingsSchema = z.object({
@@ -49,6 +50,7 @@ const settingsSchema = z.object({
   }),
   platformEnabled: z.boolean(),
   disabledMessage: z.string().optional(),
+  registrationEnabled: z.boolean(),
 });
 
 export function AdminSettings() {
@@ -86,8 +88,23 @@ export function AdminSettings() {
       primaryColor: "#1DB954",
       platformEnabled: true,
       disabledMessage: "",
+      registrationEnabled: true,
     },
   });
+
+  useEffect(() => {
+    if (settings) {
+      form.reset({
+        ...settings,
+        requestLimitPerDay: settings.requestLimitPerDay || 10,
+        requestLimitPerWeek: settings.requestLimitPerWeek || 50,
+        primaryColor: settings.primaryColor || "#1DB954",
+        platformEnabled: settings.platformEnabled !== false,
+        disabledMessage: settings.disabledMessage || "",
+        registrationEnabled: settings.registrationEnabled !== false,
+      });
+    }
+  }, [settings, form]);
 
   const updateSettings = useMutation({
     mutationFn: async (data: z.infer<typeof settingsSchema>) => {
@@ -146,11 +163,20 @@ export function AdminSettings() {
     updateSettings.mutate(data);
   };
 
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
+    router.push("/login");
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-8 space-y-8">
-        <Skeleton className="h-8 w-64" />
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-10 w-24" />
+        </div>
         <div className="space-y-4">
+          <Skeleton className="h-[200px] w-full" />
           <Skeleton className="h-[200px] w-full" />
           <Skeleton className="h-[200px] w-full" />
         </div>
@@ -174,6 +200,14 @@ export function AdminSettings() {
             onClick={() => router.push("/admin")}
           >
             <ArrowLeft className="w-4 h-4" /> Voltar
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-2 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-4 h-4" /> Sair
           </Button>
         </div>
 
@@ -463,6 +497,27 @@ export function AdminSettings() {
                         )}
                       />
                     )}
+
+                    <FormField
+                      control={form.control}
+                      name="registrationEnabled"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <FormLabel>Registro de usuários</FormLabel>
+                            <FormDescription>
+                              Permitir que novos usuários se registrem na plataforma
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
                   </CardContent>
                 </Card>
               </motion.div>

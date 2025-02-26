@@ -6,6 +6,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function updateCssVariables(color: string) {
+  if (typeof document === 'undefined') return;
+  
   // Convert hex to HSL
   const hex = color.replace('#', '');
   const r = parseInt(hex.substring(0, 2), 16) / 255;
@@ -43,4 +45,21 @@ export function updateCssVariables(color: string) {
 
   // Update CSS variables
   document.documentElement.style.setProperty('--primary', `${hDeg} ${sPct}% ${lPct}%`);
+}
+
+// Apply stored settings on client side
+export function applyStoredSettings() {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const settingsStr = localStorage.getItem('settings-storage');
+    if (settingsStr) {
+      const settings = JSON.parse(settingsStr);
+      if (settings?.state?.settings?.primaryColor) {
+        updateCssVariables(settings.state.settings.primaryColor);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to apply stored settings:', error);
+  }
 }

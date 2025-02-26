@@ -18,6 +18,10 @@ const settingsSchema = new mongoose.Schema({
   disabledMessage: { 
     type: String,
     default: 'Platform is currently under maintenance. Please try again later.'
+  },
+  registrationEnabled: {
+    type: Boolean,
+    default: true
   }
 }, { 
   timestamps: true,
