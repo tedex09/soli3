@@ -39,7 +39,7 @@
 
 @layer utilities {
   .spotify-gradient {
-    @apply bg-gradient-to-r from-[#1DB954] to-[#1ed760];
+    @apply bg-gradient-to-r from-[--primary] to-[#1ed760];
   }
   
   .glass-effect {

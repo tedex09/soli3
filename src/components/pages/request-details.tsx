@@ -28,6 +28,7 @@ import {
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
 import { motion } from "framer-motion";
+import { useRequestsStore } from "@/stores/requests";
 
 const statusMap = {
   pending: { label: "Pendente", color: "bg-yellow-500" },
@@ -46,25 +47,23 @@ export function RequestDetails({ request, isOwner, isAdmin }) {
   const router = useRouter();
   const [status, setStatus] = useState(request.status);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
-  const handleStatusChange = async (newStatus) => {
+  const { updateRequestStatus } = useRequestsStore();
+
+  const handleStatusChange = async (requestId: string, newStatus: string) => {
     try {
-      const response = await fetch(`/api/admin/requests/${request._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!response.ok) throw new Error("Failed to update status");
-
-      setStatus(newStatus);
-      toast.success("Status atualizado", {
-        description: "A solicitação foi atualizada com sucesso",
+      setUpdatingStatus(requestId);
+      await updateRequestStatus(requestId, newStatus);
+      toast.success("Status atualizado ✨", {
+        description: "A solicitação foi atualizada com sucesso!",
       });
     } catch (error) {
       toast.error("Erro ao atualizar status", {
         description: "Tente novamente mais tarde",
       });
+    } finally {
+      setUpdatingStatus(null);
     }
   };
 
@@ -171,9 +170,13 @@ export function RequestDetails({ request, isOwner, isAdmin }) {
 
             {isAdmin && (
               <div className="flex items-center gap-4">
-                <Select value={status} onValueChange={handleStatusChange}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Selecione o status" />
+                <Select
+                  value={request.status}
+                  onValueChange={(value) => handleStatusChange(request._id, value)}
+                  disabled={updatingStatus === request._id}
+                >
+                  <SelectTrigger className="w-[140px] bg-[#282828]">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">Pendente</SelectItem>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Request from "@/models/Request";
+import { checkRequestLimits } from "@/middleware/requestLimits";
 
 export async function GET() {
   try {
@@ -28,6 +29,16 @@ export async function POST(req: Request) {
     const session = await auth();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verificar limites antes de criar nova solicitação
+    try {
+      await checkRequestLimits();
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Limite de solicitações excedido" },
+        { status: 429 }
+      );
     }
 
     const body = await req.json();

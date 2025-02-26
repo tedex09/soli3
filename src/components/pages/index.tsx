@@ -13,7 +13,7 @@ export function Index() {
       {/* Navbar */}
       <nav className="fixed top-0 w-full bg-black/95 backdrop-blur-md z-50 px-6 py-4">
         <div className="flex items-center gap-2">
-          <Music2 className="w-8 h-8 text-[#1DB954]" />
+          <Music2 className="w-8 h-8 text-[--primary]" />
           <h1 className="text-xl font-bold">Content Hub</h1>
         </div>
       </nav>
@@ -23,7 +23,7 @@ export function Index() {
         <div className="space-y-8">
           {/* Hero Section */}
           <div className="text-center space-y-4 animate-fade-in">
-            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-[#1DB954] to-[#1ed760] bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-[--primary] to-[#1ed760] bg-clip-text text-transparent">
               Content Request Hub
             </h1>
             <p className="text-lg text-gray-400 max-w-2xl mx-auto">
@@ -39,7 +39,7 @@ export function Index() {
               onClick={() => router.push("/request")}
             >
               <div className="space-y-4">
-                <div className="h-12 w-12 rounded-full bg-[#1DB954] flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="h-12 w-12 rounded-full bg-[--primary] flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Music2 className="w-6 h-6 text-black" />
                 </div>
                 <h2 className="text-2xl font-bold">Make a Request</h2>
@@ -47,7 +47,7 @@ export function Index() {
                   Submit your content requests easily through our guided wizard
                 </p>
                 <Button 
-                  className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold transition-colors"
+                  className="w-full bg-[--primary] hover:bg-[#1ed760] text-black font-bold transition-colors"
                 >
                   Get Started
                   <ArrowRight className="ml-2 h-4 w-4" />

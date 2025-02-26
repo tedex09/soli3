@@ -41,7 +41,8 @@ export function RequestWizard() {
 
   const handleSubmit = async () => {
     try {
-      const response = await fetch("api/requests", {
+      setIsSubmitting(true);
+      const response = await fetch("/api/requests", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -58,7 +59,16 @@ export function RequestWizard() {
         }),
       });
       
-      if (!response.ok) throw new Error("Falha ao enviar solicitação");
+      if (!response.ok) {
+        const data = await response.json();
+        if (response.status === 429) {
+          toast.error("Limite excedido", {
+            description: data.error,
+          });
+          return;
+        }
+        throw new Error("Falha ao enviar solicitação");
+      }
 
       toast.success("✨ Solicitação enviada!", {
         description: "Você será redirecionado para o dashboard.",
@@ -292,7 +302,7 @@ export function RequestWizard() {
             </Card>
 
             <Button
-              className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-white"
+              className="w-full bg-[--primary] hover:bg-[#1ed760] text-white"
               onClick={handleSubmit}
               disabled={isSubmitting || (requestType !== "add" && !description)}
             >

@@ -38,6 +38,15 @@ export function Dashboard() {
     }
   });
 
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/settings");
+      if (!response.ok) throw new Error("Failed to fetch settings");
+      return response.json();
+    },
+  });
+
   const filteredRequests = statusFilter === "all"
     ? requests
     : requests?.filter(request => request.status === statusFilter);
@@ -91,6 +100,11 @@ export function Dashboard() {
           <p className="text-muted-foreground">
             Acompanhe o status das suas solicitações
           </p>
+          {settings && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Limites: {settings.requestLimitPerDay} por dia / {settings.requestLimitPerWeek} por semana
+            </p>
+          )}
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
           <Select
@@ -110,7 +124,7 @@ export function Dashboard() {
           </Select>
           <Button 
             onClick={() => router.push("/request")}
-            className="bg-[#1DB954] hover:bg-[#1ed760] text-white"
+            className="bg-[--primary] hover:bg-[#1ed760] text-white"
           >
             Nova solicitação
           </Button>
@@ -127,14 +141,14 @@ export function Dashboard() {
             <div>
               <h2 className="text-lg font-semibold mb-2">Progresso Geral</h2>
               <p className="text-sm text-muted-foreground">
-                {completedPercentage.toFixed(0)}% das solicitações concluídas
+                {!completedPercentage ? 0 : completedPercentage.toFixed(0)}% das solicitações concluídas
               </p>
             </div>
             <div className="w-full md:w-1/2">
               <div className="h-4 w-full rounded-full bg-secondary overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#1DB954] to-[#1ed760] transition-all duration-500"
-                  style={{ width: `${completedPercentage}%` }}
+                  className="h-full rounded-full bg-gradient-to-r from-[--primary] to-[#1ed760] transition-all duration-500"
+                  style={{ width: `${!completedPercentage ? 0 : completedPercentage}%` }}
                 />
               </div>
             </div>
@@ -243,7 +257,7 @@ export function Dashboard() {
           </p>
           <Button
             onClick={() => router.push("/request")}
-            className="bg-[#1DB954] hover:bg-[#1ed760] text-white"
+            className="bg-[--primary] hover:bg-[#1ed760] text-white"
           >
             Criar solicitação
           </Button>

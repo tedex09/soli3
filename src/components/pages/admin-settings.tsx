@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,9 +21,21 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Music2, ArrowLeft, Loader2 } from "lucide-react";
+import { Music2, ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSettingsStore } from "@/stores/settings";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 const settingsSchema = z.object({
   requestLimitPerDay: z.number().min(1),
@@ -32,16 +44,36 @@ const settingsSchema = z.object({
   twilioAccountSid: z.string().optional(),
   twilioAuthToken: z.string().optional(),
   twilioPhoneNumber: z.string().optional(),
-  primaryColor: z.string(),
+  primaryColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, {
+    message: "Invalid color format. Use hex color (e.g., #1DB954)",
+  }),
   platformEnabled: z.boolean(),
   disabledMessage: z.string().optional(),
 });
 
 export function AdminSettings() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { setSettings } = useSettingsStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const [isDeleting, setIsDeleting] = useState(false);
+
+
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/settings");
+      if (!response.ok) throw new Error("Failed to fetch settings");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      form.reset(data);
+      setSettings(data);
+      // Apply primary color to CSS variables
+      document.documentElement.style.setProperty('--primary', data.primaryColor);
+    },
+  });
+
   const form = useForm<z.infer<typeof settingsSchema>>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
@@ -54,19 +86,6 @@ export function AdminSettings() {
       primaryColor: "#1DB954",
       platformEnabled: true,
       disabledMessage: "",
-    },
-  });
-
-  const { data: settings, isLoading } = useQuery({
-    queryKey: ["settings"],
-    queryFn: async () => {
-      const response = await fetch("/api/admin/settings");
-      if (!response.ok) throw new Error("Failed to fetch settings");
-      return response.json();
-    },
-    onSuccess: (data) => {
-      form.reset(data);
-      setSettings(data);
     },
   });
 
@@ -83,6 +102,8 @@ export function AdminSettings() {
     },
     onSuccess: (data) => {
       setSettings(data);
+      // Apply primary color to CSS variables
+      document.documentElement.style.setProperty('--primary', data.primaryColor);
       toast.success("Configurações salvas", {
         description: "As alterações foram aplicadas com sucesso",
       });
@@ -94,6 +115,30 @@ export function AdminSettings() {
     },
     onSettled: () => {
       setIsSubmitting(false);
+    },
+  });
+
+  const deleteAllRequests = useMutation({
+    mutationFn: async () => {
+      setIsDeleting(true);
+      const response = await fetch("/api/admin/requests", {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete requests");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["admin-requests"]);
+      toast.success("Solicitações excluídas", {
+        description: "Todas as solicitações foram removidas com sucesso",
+      });
+    },
+    onError: () => {
+      toast.error("Erro ao excluir", {
+        description: "Ocorreu um erro ao excluir as solicitações",
+      });
+    },
+    onSettled: () => {
+      setIsDeleting(false);
     },
   });
 
@@ -119,7 +164,7 @@ export function AdminSettings() {
         {/* Sidebar */}
         <div className="w-64 bg-black h-screen fixed left-0 p-6">
           <div className="flex items-center gap-2 mb-8">
-            <Music2 className="w-8 h-8 text-[#1DB954]" />
+            <Music2 className="w-8 h-8 text-[--primary]" />
             <h1 className="text-xl font-bold">Content Hub</h1>
           </div>
           
@@ -151,7 +196,7 @@ export function AdminSettings() {
                 <Card>
                   <CardHeader>
                     <h2 className="text-2xl font-semibold">
-                      Limites de Solicitações
+                      Solicitações
                     </h2>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -200,6 +245,45 @@ export function AdminSettings() {
                         </FormItem>
                       )}
                     />
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="destructive"
+                          className="w-full"
+                          disabled={isDeleting}
+                        >
+                          {isDeleting ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Excluindo...
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir todas as solicitações
+                            </>
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir todas as solicitações?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. Todas as solicitações serão permanentemente removidas.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteAllRequests.mutate()}
+                            className="bg-destructive hover:bg-destructive/90"
+                          >
+                            Confirmar exclusão
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -309,8 +393,27 @@ export function AdminSettings() {
                           <FormLabel>Cor primária</FormLabel>
                           <FormControl>
                             <div className="flex gap-4">
-                              <Input type="color" {...field} className="w-20 h-10" />
-                              <Input {...field} placeholder="#1DB954" />
+                              <Input 
+                                type="color" 
+                                {...field} 
+                                className="w-20 h-10"
+                                onChange={(e) => {
+                                  field.onChange(e.target.value);
+                                  // Preview color change
+                                  document.documentElement.style.setProperty('--primary', e.target.value);
+                                }}
+                              />
+                              <Input 
+                                {...field} 
+                                placeholder="#1DB954"
+                                onChange={(e) => {
+                                  field.onChange(e.target.value);
+                                  // Preview color change if valid hex
+                                  if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(e.target.value)) {
+                                    document.documentElement.style.setProperty('--primary', e.target.value);
+                                  }
+                                }}
+                              />
                             </div>
                           </FormControl>
                           <FormDescription>
@@ -366,7 +469,7 @@ export function AdminSettings() {
 
               <Button
                 type="submit"
-                className="w-full bg-[#1DB954] hover:bg-[#1ed760]"
+                className="w-full bg-[--primary] hover:bg-[#1ed760]"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (

@@ -132,7 +132,7 @@ export function AdminUsers() {
         {/* Sidebar */}
         <div className="w-64 bg-black h-screen fixed left-0 p-6">
           <div className="flex items-center gap-2 mb-8">
-            <Music2 className="w-8 h-8 text-[#1DB954]" />
+            <Music2 className="w-8 h-8 text-[--primary]" />
             <h1 className="text-xl font-bold">Content Hub</h1>
           </div>
           
@@ -161,7 +161,7 @@ export function AdminUsers() {
                     setEditingUser(null);
                     setIsOpen(true);
                   }}
-                  className="bg-[#1DB954] hover:bg-[#1ed760]"
+                  className="bg-[--primary] hover:bg-[#1ed760]"
                 >
                   <UserPlus className="mr-2 h-4 w-4" />
                   Novo Usuário
