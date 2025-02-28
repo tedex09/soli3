@@ -28,7 +28,7 @@ export const useSettingsStore = create<SettingsState>()(
         requestLimitPerDay: 10,
         requestLimitPerWeek: 50,
         whatsappEnabled: false,
-        primaryColor: '#1DB954',
+        primaryColor: '#B91D3A',
         platformEnabled: true,
         disabledMessage: '',
         registrationEnabled: true,
@@ -59,6 +59,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'settings-storage',
+      partialize: (state) => ({ settings: state.settings }),
     }
   )
 );

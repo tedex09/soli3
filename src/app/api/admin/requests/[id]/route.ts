@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Request from "@/models/Request";
+import User from "@/models/User";
+import { sendWhatsAppNotification } from "@/lib/twilio";
 
 export async function GET(req: NextRequest) {
   try {
@@ -50,14 +52,39 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     await dbConnect();
 
+    // Get the current request to check for status changes
+    const currentRequest = await Request.findById(body.id);
+    if (!currentRequest) {
+      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+
     const request = await Request.findByIdAndUpdate(
       body.id,
       { status: body.status },
       { new: true }
     );
 
-    if (!request) {
-      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    // Send WhatsApp notification if status changed and notifications are enabled
+    if (body.status && body.status !== currentRequest.status && currentRequest.notifyWhatsapp) {
+      try {
+        // Get user's WhatsApp number
+        const user = await User.findById(currentRequest.userId);
+        if (user && user.whatsapp) {
+          const statusMessages = {
+            pending: "Sua solicitação está pendente de análise.",
+            in_progress: "Sua solicitação está em análise pela nossa equipe.",
+            completed: "Sua solicitação foi concluída com sucesso!",
+            rejected: "Sua solicitação foi rejeitada. Entre em contato para mais informações."
+          };
+          
+          const message = `*Atualização de Solicitação*\n\nOlá ${user.name},\n\nSua solicitação para "${currentRequest.mediaTitle}" teve o status atualizado para: *${statusMessages[body.status] || body.status}*\n\nAcesse a plataforma para mais detalhes.`;
+          
+          await sendWhatsAppNotification(user.whatsapp, message);
+        }
+      } catch (notificationError) {
+        console.error("Error sending notification:", notificationError);
+        // Don't fail the request if notification fails
+      }
     }
 
     return NextResponse.json(request);

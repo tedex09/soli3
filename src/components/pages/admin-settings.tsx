@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Music2, ArrowLeft, Loader2, Trash2, LogOut } from "lucide-react";
+import { PlaySquare, ArrowLeft, Loader2, Trash2, LogOut } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSettingsStore } from "@/stores/settings";
 import {
@@ -36,6 +36,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { signOut } from "next-auth/react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 const settingsSchema = z.object({
@@ -46,7 +47,7 @@ const settingsSchema = z.object({
   twilioAuthToken: z.string().optional(),
   twilioPhoneNumber: z.string().optional(),
   primaryColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, {
-    message: "Invalid color format. Use hex color (e.g., #1DB954)",
+    message: "Invalid color format. Use hex color (e.g., #B91D3A)",
   }),
   platformEnabled: z.boolean(),
   disabledMessage: z.string().optional(),
@@ -59,6 +60,8 @@ export function AdminSettings() {
   const { setSettings } = useSettingsStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
 
 
   const { data: settings, isLoading } = useQuery({
@@ -85,7 +88,7 @@ export function AdminSettings() {
       twilioAccountSid: "",
       twilioAuthToken: "",
       twilioPhoneNumber: "",
-      primaryColor: "#1DB954",
+      primaryColor: "#B91D3A",
       platformEnabled: true,
       disabledMessage: "",
       registrationEnabled: true,
@@ -98,7 +101,7 @@ export function AdminSettings() {
         ...settings,
         requestLimitPerDay: settings.requestLimitPerDay || 10,
         requestLimitPerWeek: settings.requestLimitPerWeek || 50,
-        primaryColor: settings.primaryColor || "#1DB954",
+        primaryColor: settings.primaryColor || "#B91D3A",
         platformEnabled: settings.platformEnabled !== false,
         disabledMessage: settings.disabledMessage || "",
         registrationEnabled: settings.registrationEnabled !== false,
@@ -184,14 +187,71 @@ export function AdminSettings() {
     );
   }
 
+  const MobileMenu = () => (
+    <div className={`fixed inset-0 bg-black/90 backdrop-blur-md z-50 transform transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className="flex flex-col h-full p-6">
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center gap-2">
+            <PlaySquare className="w-8 h-8 text-[#B91D3A]" />
+            <h1 className="text-xl font-bold">Portal VOD</h1>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <X className="w-6 h-6" />
+          </Button>
+        </div>
+        
+        <div className="flex-1 flex flex-col gap-4">
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-2 mb-4"
+            onClick={() => router.push("/admin")}
+          >
+            <ArrowLeft className="w-4 h-4" /> Voltar
+          </Button>
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start gap-3 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-5 h-5" /> Sair
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#121212] text-white">
-      <div className="flex">
-        {/* Sidebar */}
-        <div className="w-64 bg-black h-screen fixed left-0 p-6">
+      {/* Mobile Header - Only visible on mobile */}
+      {isMobile && (
+        <header className="fixed top-0 left-0 right-0 h-16 bg-black/95 backdrop-blur-md z-40 flex items-center justify-between px-4 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <PlaySquare className="w-6 h-6 text-[#B91D3A]" />
+            <h1 className="text-lg font-semibold">Portal VOD</h1>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+        </header>
+      )}
+
+      {/* Mobile Menu */}
+      {isMobile && <MobileMenu />}
+
+      <div className="flex flex-col md:flex-row">
+        {/* Sidebar - Hidden on mobile */}
+        <div className="hidden md:block w-64 bg-black h-screen fixed left-0 p-6">
           <div className="flex items-center gap-2 mb-8">
-            <Music2 className="w-8 h-8 text-[--primary]" />
-            <h1 className="text-xl font-bold">Content Hub</h1>
+            <PlaySquare className="w-8 h-8 text-[#B91D3A]" />
+            <h1 className="text-xl font-bold">Portal VOD</h1>
           </div>
           
           <Button
@@ -212,7 +272,7 @@ export function AdminSettings() {
         </div>
 
         {/* Main Content */}
-        <div className="ml-64 flex-1 p-8">
+        <div className={`flex-1 p-4 md:p-8 ${isMobile ? 'pt-20' : 'md:ml-64'}`}>
           <div className="mb-8">
             <h1 className="text-3xl font-bold">Configurações do Sistema</h1>
             <p className="text-muted-foreground">
@@ -415,11 +475,11 @@ export function AdminSettings() {
                 <Card>
                   <CardHeader>
                     <h2 className="text-2xl font-semibold">
-                      Aparência e Status
+                      Plataforma
                     </h2>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <FormField
+                    {/* <FormField
                       control={form.control}
                       name="primaryColor"
                       render={({ field }) => (
@@ -439,7 +499,7 @@ export function AdminSettings() {
                               />
                               <Input 
                                 {...field} 
-                                placeholder="#1DB954"
+                                placeholder="#B91D3A"
                                 onChange={(e) => {
                                   field.onChange(e.target.value);
                                   // Preview color change if valid hex
@@ -456,7 +516,7 @@ export function AdminSettings() {
                           <FormMessage />
                         </FormItem>
                       )}
-                    />
+                    /> */}
 
                     <FormField
                       control={form.control}
@@ -524,7 +584,7 @@ export function AdminSettings() {
 
               <Button
                 type="submit"
-                className="w-full bg-[--primary] hover:bg-[#1ed760]"
+                className="w-full bg-[#B91D3A] hover:bg-[#D71E50]"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (

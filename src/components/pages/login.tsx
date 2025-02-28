@@ -6,12 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, LogIn, User } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { signIn } from "next-auth/react";
 
 export function Login() {
   const router = useRouter();
-  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -32,16 +31,13 @@ export function Login() {
 
       }
 
-      toast({
-        title: "Login realizado com sucesso!",
+      toast.success("Login realizado com sucesso! ✨", {
         description: "Redirecionando para o dashboard...",
       });
       
       router.push("/dashboard");
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
+      toast.error("Opa! Algo deu errado", {
         description: error instanceof Error ? error.message : "Falha ao realizar login",
       });
     } finally {
@@ -54,7 +50,7 @@ export function Login() {
       <div className="w-full max-w-md space-y-8">
         <Button
           variant="ghost"
-          className="pl-0 text-muted-foreground hover:text-primary"
+          className="pl-2 text-muted-foreground hover:text-white"
           onClick={() => router.push("/")}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -63,7 +59,7 @@ export function Login() {
 
         <Card className="w-full p-6 glass-effect">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 rounded-full spotify-gradient flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-full bg-[#B91D3A] flex items-center justify-center mb-4">
               <User className="h-6 w-6 text-primary-foreground" />
             </div>
             <h2 className="text-2xl font-bold text-foreground">Bem-vindo de volta</h2>
@@ -103,7 +99,7 @@ export function Login() {
 
             <Button 
               type="submit" 
-              className="w-full spotify-gradient hover-scale group"
+              className="w-full bg-[#B91D3A] hover-scale group"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -115,17 +111,6 @@ export function Login() {
                 </>
               )}
             </Button>
-
-            <p className="text-center text-sm text-muted-foreground">
-              Não tem uma conta?{" "}
-              <button
-                type="button"
-                onClick={() => router.push("/register")}
-                className="text-primary hover:underline focus:outline-none"
-              >
-                Registrar
-              </button>
-            </p>
           </form>
         </Card>
       </div>

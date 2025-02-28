@@ -16,8 +16,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Film, Tv, Plus, Wrench, RefreshCw, Share2, Copy } from "lucide-react";
+import { Film, Tv, Plus, Wrench, RefreshCw, Share2, Copy, LogOut } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { signOut } from "next-auth/react";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -60,6 +61,16 @@ export function Dashboard() {
   const completedPercentage = requests
     ? (requests.filter(r => r.status === "completed").length / requests.length) * 100
     : 0;
+
+  const requestLink = typeof window !== "undefined" 
+  ? `${window.location.origin}/request/${selectedRequestId}` 
+  : "";
+
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
+    router.push("/login");
+  };
+  
 
   if (isLoading) {
     return (
@@ -124,7 +135,7 @@ export function Dashboard() {
           </Select>
           <Button 
             onClick={() => router.push("/request")}
-            className="bg-[--primary] hover:bg-[--primary]/50 text-white"
+            className="bg-[#B91D3A] hover:bg-[#B91D3A]/50 text-white"
           >
             Nova solicitação
           </Button>
@@ -136,23 +147,27 @@ export function Dashboard() {
         animate={{ opacity: 1 }}
         className="mb-8"
       >
-        <Card className="p-6">
+        <Card className="p-6 overflow-hidden relative">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div>
+            <div className="z-10">
               <h2 className="text-lg font-semibold mb-2">Progresso Geral</h2>
               <p className="text-sm text-muted-foreground">
                 {!completedPercentage ? 0 : completedPercentage.toFixed(0)}% das solicitações concluídas
               </p>
             </div>
-            <div className="w-full md:w-1/2">
+            <div className="w-full md:w-1/2 z-10">
               <div className="h-4 w-full rounded-full bg-secondary overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[--primary] to-[#1ed760] transition-all duration-500"
+                  className="h-full rounded-full bg-gradient-to-r from-[#B91D3A] to-[#D71E50] transition-all duration-500"
                   style={{ width: `${!completedPercentage ? 0 : completedPercentage}%` }}
                 />
               </div>
             </div>
           </div>
+          
+          {/* Decorative elements */}
+          <div className="absolute -right-12 -top-12 w-40 h-40 rounded-full bg-[#B91D3A]/10 blur-xl"></div>
+          <div className="absolute -left-12 -bottom-12 w-40 h-40 rounded-full bg-[#B91D3A]/5 blur-xl"></div>
         </Card>
       </motion.div>
 
@@ -257,7 +272,7 @@ export function Dashboard() {
           </p>
           <Button
             onClick={() => router.push("/request")}
-            className="bg-[--primary] hover:bg-[#1ed760] text-white"
+            className="bg-[#B91D3A] hover:bg-[#D71E50] text-white"
           >
             Criar solicitação
           </Button>
@@ -292,6 +307,14 @@ export function Dashboard() {
         </div>
       )}
 
+      <Button 
+        variant="ghost" 
+        className="w-auto justify-start gap-2 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+        onClick={handleLogout}
+      >
+        <LogOut className="w-4 h-4" /> Sair
+      </Button>
+
       {/* Share Dialog */}
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
         <DialogContent>
@@ -301,12 +324,12 @@ export function Dashboard() {
           <div className="flex items-center gap-2 mt-4">
             <Input 
               readOnly 
-              value={`${window.location.origin}/request/${selectedRequestId}`}
+              value={requestLink}
             />
             <Button
               variant="outline"
               size="icon"
-              onClick={() => copyToClipboard(`${window.location.origin}/request/${selectedRequestId}`)}
+              onClick={() => copyToClipboard(requestLink)}
             >
               <Copy className="h-4 w-4" />
             </Button>

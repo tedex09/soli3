@@ -3,32 +3,40 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
-import { Music2, ArrowRight, LogIn, UserPlus } from "lucide-react";
+import { PlaySquare, ArrowRight, LogIn, UserPlus } from "lucide-react";
+import { useSettingsStore } from "@/stores/settings";
+import { useEffect, useState } from "react";
 
 export function Index() {
   const router = useRouter();
+  const { settings } = useSettingsStore();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#121212] text-white">
       {/* Navbar */}
-      <nav className="fixed top-0 w-full bg-black/95 backdrop-blur-md z-50 px-6 py-4">
+      {/* <nav className="fixed top-0 w-full bg-black/95 backdrop-blur-md z-50 px-6 py-4">
         <div className="flex items-center gap-2">
-          <Music2 className="w-8 h-8 text-[--primary]" />
-          <h1 className="text-xl font-bold">Content Hub</h1>
+          <Music2 className="w-8 h-8 text-[#B91D3A]" />
+          <h1 className="text-xl font-bold">Portal VOD</h1>
         </div>
-      </nav>
+      </nav> */}
 
       {/* Main Content */}
       <div className="pt-20 px-4 md:px-8 max-w-6xl mx-auto">
         <div className="space-y-8">
           {/* Hero Section */}
           <div className="text-center space-y-4 animate-fade-in">
-            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-[--primary] to-[#1ed760] bg-clip-text text-transparent">
-              Content Request Hub
+            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-[#B91D3A] to-[#D71E50] bg-clip-text text-transparent">
+              Solicite seus VODs
             </h1>
             <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-              Request new movies and TV shows, update existing content, or report issues
-              with our simple wizard-driven process ✨
+              Solicite novos filmes e séries, atualize o conteúdo existente ou relate problemas
+              de forma simplificada e rápida ✨
             </p>
           </div>
 
@@ -39,17 +47,17 @@ export function Index() {
               onClick={() => router.push("/request")}
             >
               <div className="space-y-4">
-                <div className="h-12 w-12 rounded-full bg-[--primary] flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Music2 className="w-6 h-6 text-black" />
+                <div className="h-12 w-12 rounded-full bg-[#B91D3A] flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <PlaySquare className="w-6 h-6 text-black" />
                 </div>
-                <h2 className="text-2xl font-bold">Make a Request</h2>
+                <h2 className="text-2xl font-bold">Solicite seu conteúdo</h2>
                 <p className="text-gray-400">
-                  Submit your content requests easily through our guided wizard
+                  Envie suas solicitações de conteúdo facilmente através de nosso assistente guiado
                 </p>
                 <Button 
-                  className="w-full bg-[--primary] hover:bg-[#1ed760] text-black font-bold transition-colors"
+                  className="w-full bg-[#B91D3A] hover:bg-[#D71E50] text-black font-bold transition-colors"
                 >
-                  Get Started
+                  Solicitar
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -59,9 +67,9 @@ export function Index() {
               className="p-6 bg-gradient-to-br from-[#535353] to-[#282828] border-none"
             >
               <div className="space-y-4">
-                <h2 className="text-2xl font-bold">Already have an account?</h2>
+                <h2 className="text-2xl font-bold">Já tem uma conta?</h2>
                 <p className="text-gray-400">
-                  Sign in to track your requests and get notifications
+                  Faça login para rastrear suas solicitações e receber notificações
                 </p>
                 <div className="space-y-3">
                   <Button 
@@ -70,15 +78,17 @@ export function Index() {
                     onClick={() => router.push("/login")}
                   >
                     <LogIn className="mr-2 h-4 w-4" />
-                    Login
+                    Entrar
                   </Button>
+                  
                   <Button 
                     variant="outline" 
-                    className="w-full border-white/10 hover:border-white/20 hover:bg-white/5 transition-colors"
+                    className="w-full border-white/10 hover:border-white/20 hover:bg-white/5 hover:text-bold transition-colors"
+                    disabled={isClient && !settings.registrationEnabled }
                     onClick={() => router.push("/register")}
                   >
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Register
+                    Cadastre-se
                   </Button>
                 </div>
               </div>
@@ -89,16 +99,16 @@ export function Index() {
           <div className="grid md:grid-cols-3 gap-6 py-12">
             {[
               {
-                title: "Easy Requests",
-                description: "Submit content requests with our intuitive wizard interface 🎯"
+                title: "Solicitações Fáceis",
+                description: "Envie solicitações de conteúdo com nossa interface intuitiva de assistente"
               },
               {
-                title: "Real-time Updates",
-                description: "Track the status of your requests in real-time ⚡"
+                title: "Atualizações em Tempo Real",
+                description: "Acompanhe o status de suas solicitações em tempo real ⚡"
               },
               {
-                title: "Quick Response",
-                description: "Get notifications when your requests are processed 🔔"
+                title: "Resposta rápida",
+                description: "Receba notificações quando suas solicitações forem processadas 🔔"
               }
             ].map((feature, index) => (
               <div 

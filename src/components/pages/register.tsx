@@ -8,7 +8,7 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 
 const formSchema = z.object({
@@ -20,7 +20,6 @@ const formSchema = z.object({
 
 export function Register() {
   const router = useRouter();
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -49,17 +48,17 @@ export function Register() {
         throw new Error("Falha ao criar conta");
       }
 
-      toast({
-        title: "Conta criada com sucesso!",
+      toast.success(
+        "Conta criada com sucesso! ✨", {
         description: "Você será redirecionado para o login.",
       });
       
       setTimeout(() => router.push("/login"), 2000);
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao criar conta",
-        description: error instanceof Error ? error.message : "Tente novamente mais tarde",
+
+      toast.error(
+        "Erro ao criar conta!", {
+        description: "Tente novamente mais tarde",
       });
     } finally {
       setIsLoading(false);

@@ -302,7 +302,7 @@ export function RequestWizard() {
             </Card>
 
             <Button
-              className="w-full bg-[--primary] hover:bg-[#1ed760] text-white"
+              className="w-full bg-[#B91D3A] hover:bg-[#D71E50] text-white"
               onClick={handleSubmit}
               disabled={isSubmitting || (requestType !== "add" && !description)}
             >

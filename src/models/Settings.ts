@@ -9,7 +9,7 @@ const settingsSchema = new mongoose.Schema({
   twilioPhoneNumber: { type: String },
   primaryColor: { 
     type: String, 
-    default: '#1DB954' 
+    default: '#B91D3A' 
   },
   platformEnabled: { 
     type: Boolean, 
